@@ -23,3 +23,5 @@ cache.get("some_key_string",function(data){
     // do_something_with(data);
 });
 ```
+
+If a key is not accessed for ```element_life_time_miliseconds``` amount of miliseconds, next time the key is accessed a cache-miss occurs. Any access before this time is serviced from RAM.
