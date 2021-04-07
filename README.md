@@ -14,7 +14,7 @@ let num_cache_elements = 1000;
 let element_life_time_miliseconds = 1000;
 let cache = new Lru(num_cache_elements, async function(key,callback){
   // datastore access for filling the missing cache element when user access key
-  callback(some_data_by(key)); 
+  callback(some_time_taking_io_work_or_heavy_computation(key)); 
 }, element_life_time_miliseconds);
 
 
