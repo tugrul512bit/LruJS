@@ -23,7 +23,7 @@ fileCache.get("./test.js",function(dat){
   console.log("Cache-miss time:");
   console.log(Date.now()-t1);
   console.log("file data:");
-  console.log(dat.length);
+  console.log(dat.data.length+" bytes");
   
   
   // cache-hit
@@ -32,7 +32,7 @@ fileCache.get("./test.js",function(dat){
     console.log("Cache-hit time:");
     console.log(Date.now()-t1);
     console.log("file data:");
-    console.log(dat.length);
+    console.log(dat.data.length+" bytes");
 
   });
   
@@ -48,7 +48,29 @@ setTimeout(function(){
     console.log("Cache-miss time:");
     console.log(Date.now()-t2);
     console.log("file data:");
-    console.log(dat.length);
+    console.log(dat.data.length+" bytes");
 
   });
 },2500);
+
+/*
+output on my computer (ubuntu has its own file cache too, so it is less effective):
+
+Cache-miss time:
+13
+file data:
+2088 bytes
+
+Cache-hit time:
+0
+file data:
+2088 bytes
+
+Cache-miss time:
+1
+file data:
+2088 bytes
+
+the second cache-miss is faster because of ubuntu's file cache but there is still the api latency of file-access
+
+*/
