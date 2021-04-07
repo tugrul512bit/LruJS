@@ -18,7 +18,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 		let callback = callbackPrm;
 		if(key in mapping)
 		{
-			// RAM hızında bilgi
+			// RAM speed
 			if(Date.now() - buf[mapping[key]].time > maxWait)
 			{
 				delete mapping[key];
@@ -35,7 +35,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 		}
 		else
 		{
-			// dosya hızında bilgi
+			// cache-miss
 			let ctrFound = -1;
 			while(ctrFound===-1)
 			{
