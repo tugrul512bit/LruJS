@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 	let me = this;
 	let maxWait = elementLifeTimeMs;
