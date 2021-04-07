@@ -8,7 +8,7 @@ Works with asynchronous cache-miss methods given by user too.
 
 Easy to use:
 
-```java
+```JavaScript
 let Lru = require("./lrucache.js").Lru;
 let num_cache_elements = 1000;
 let element_life_time_miliseconds = 1000;
