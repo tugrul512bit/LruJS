@@ -3,11 +3,6 @@ Uses string as key, stores any data. Caching algorithm is CLOCK version of LRU(a
 - Cache-hit: O(1) time complexity, garbage-collection friendly
 - Cache-miss: O(1) time complexity, asynchronous
 
-
-So that having thousands of cache elements do not slow-down the access. 
-
-Works with asynchronous cache-miss methods given by user too.
-
 Easy to use:
 
 ```JavaScript
@@ -26,4 +21,4 @@ cache.get("some_key_string",function(data){
 });
 ```
 
-If a key is not accessed for ```element_life_time_miliseconds``` amount of miliseconds, next time the key is accessed a cache-miss occurs. Any access before this time is serviced from RAM.
+If a key is not accessed for ```element_life_time_miliseconds``` amount of miliseconds, a cache-miss occurs during next access. Any access before this time is serviced from RAM.
