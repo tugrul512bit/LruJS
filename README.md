@@ -20,5 +20,6 @@ cache.get("some_key_string",function(data){
     // do_something_with(data);
 });
 ```
+Number of "asynchronous" accessors (or number of asynchronous cache-misses) need to be equal to or less than cache size. Otherwise dead-lock occurs.
 
 If a key is not accessed for ```element_life_time_miliseconds``` amount of miliseconds, a cache-miss occurs during next access. Any access before this time is serviced from RAM.
