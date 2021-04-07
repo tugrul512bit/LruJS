@@ -9,22 +9,39 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 	{
 		let rnd = Math.random();
 		mapping[rnd] = i;
-		buf.push({data:"",visited:false, key:rnd, time:Date.now() - maxWait});
+		buf.push({data:"",visited:false, key:rnd, time:0, locked:false});
 	}
 	let ctr = 0;
 	let ctrEvict = parseInt(cacheSize/2,10);
 	let loadData = callbackBackingStoreLoad;
 	this.get = function(key,callbackPrm){
+		
 		let callback = callbackPrm;
 		if(key in mapping)
 		{
-			// RAM speed
-			if(Date.now() - buf[mapping[key]].time > maxWait)
+
+			// RAM speed data
+			if((Date.now() - buf[mapping[key]].time) > maxWait)
 			{
-				delete mapping[key];
-				me.get(key,function(newData){
-					callback(newData);
-				});
+				
+				if(buf[mapping[key]].locked)
+				{					
+					setTimeout(function(){
+						me.get(key,function(newData){
+							callback(newData);
+						});
+					},0);
+					return;
+				}
+				else
+				{
+					delete mapping[key];
+					me.get(key,function(newData){
+						callback(newData);
+					});
+					
+				}
+				
 			}
 			else
 			{
@@ -35,11 +52,11 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 		}
 		else
 		{
-			// cache-miss
+			// datastore loading + cache eviction
 			let ctrFound = -1;
 			while(ctrFound===-1)
 			{
-				if(buf[ctr].visited)
+				if(!buf[ctr].locked && buf[ctr].visited)
 				{
 					buf[ctr].visited=false;
 				}
@@ -49,9 +66,10 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 					ctr=0;
 				}
 
-				if(!(buf[ctrEvict].visited))
+				if(!buf[ctrEvict].locked && !buf[ctrEvict].visited)
 				{
 					// evict
+					buf[ctrEvict].locked = true;
 					ctrFound = ctrEvict;
 				}
 
@@ -63,9 +81,11 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 			}
 			delete mapping[buf[ctrFound].key];
 			mapping[key] = ctrFound;
+		
 			loadData(key,function(res){
-				buf[ctrFound] = {data: res, visited:false, key:key, time:Date.now()};
+				buf[ctrFound] = {data: res, visited:false, key:key, time:Date.now(), locked:false};
 				callback(buf[ctrFound].data);
+				
 			});
 
 		}
