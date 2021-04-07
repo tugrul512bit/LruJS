@@ -1,8 +1,6 @@
 "use strict";
 /* benchmark 1000 milisecond item loading asynchronously for 1000 times, in 1100 miliseconds */
 let Lru = require("./lrucache.js").Lru;
-let fs = require("fs");
-let path = require("path");
 
 let cache = new Lru(500, async function(key,callback){
 	// cache-miss data-load algorithm
