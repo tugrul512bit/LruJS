@@ -15,7 +15,7 @@ let fileCache = new Lru(500, async function(key,callback){
     });
 },1000 /* cache element lifetime */);
 
-// test with own file
+// test with a file
 // cache-miss
 let t1 = Date.now();
 fileCache.get("./test.js",function(dat){
@@ -23,7 +23,7 @@ fileCache.get("./test.js",function(dat){
   console.log("Cache-miss time:");
   console.log(Date.now()-t1);
   console.log("file data:");
-  console.log(dat.data.toString());
+  console.log(dat.length);
   
   
   // cache-hit
@@ -32,7 +32,7 @@ fileCache.get("./test.js",function(dat){
     console.log("Cache-hit time:");
     console.log(Date.now()-t1);
     console.log("file data:");
-    console.log(dat.data.toString());
+    console.log(dat.length);
 
   });
   
@@ -48,7 +48,7 @@ setTimeout(function(){
     console.log("Cache-miss time:");
     console.log(Date.now()-t2);
     console.log("file data:");
-    console.log(dat.data.toString());
+    console.log(dat.length);
 
   });
 },2500);
