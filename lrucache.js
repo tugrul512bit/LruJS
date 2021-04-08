@@ -1,4 +1,9 @@
 'use strict';
+/* 
+cacheSize: number of elements in cache, constant, must be greater than or equal to number of asynchronous accessors / cache misses
+callbackBackingStoreLoad: user-given cache-miss function to load data from datastore
+elementLifeTimeMs: maximum miliseconds before an element is invalidated, only invalidated at next get() call with its key
+*/
 let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 	let me = this;
 	let maxWait = elementLifeTimeMs;
@@ -25,17 +30,18 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 			{
 				
 				if(buf[mapping[key]].locked)
-				{					
+				{										
 					setTimeout(function(){
 						me.get(key,function(newData){
 							callback(newData);
 						});
 					},0);
-					return;
+					
 				}
 				else
 				{
 					delete mapping[key];
+					
 					me.get(key,function(newData){
 						callback(newData);
 					});
@@ -80,12 +86,12 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 				}
 			}
 			delete mapping[buf[ctrFound].key];
-			mapping[key] = ctrFound;
+			
 		
 			loadData(key,function(res){
 				buf[ctrFound] = {data: res, visited:false, key:key, time:Date.now(), locked:false};
 				callback(buf[ctrFound].data);
-				
+				mapping[key] = ctrFound;				
 			});
 
 		}
