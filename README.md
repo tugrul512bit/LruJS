@@ -1,7 +1,7 @@
 Uses string as key, stores any data. Caching algorithm is CLOCK version of LRU(approximation) with two hands (1 hand = second chance, 1 hand = eviction).
 
-- Cache-hit: O(1) time complexity, garbage-collection friendly
-- Cache-miss: O(1) time complexity, asynchronous
+- Cache-hit: O(1) time complexity, garbage-collection friendly (no node movement, just assignment of values)
+- Cache-miss: O(1) time complexity, asynchronous (1000 cache misses with 1000ms latency = ~1100ms total latency)
 
 Easy to use:
 
