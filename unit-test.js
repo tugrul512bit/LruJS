@@ -1,12 +1,13 @@
 "use strict";
 console.log("tests will take several seconds. results will be shown at end.");
 let Lru = require("./lrucache.js").Lru;
-let benchData = {hits:0, misses:0, total:0, expires:0, evict:0, evictCtr:0};
+let benchData = {hits:0, misses:0, total:0, expires:0, evict:0, evictCtr:0, access50:0, miss50:0};
 let errorCheck = {	
 	"cache_hit_test":"failed",
 	"cache_miss_test":"failed",
 	"cache_expire_test":"failed",
-	"cache_eviction_test":"failed"
+	"cache_eviction_test":"failed",
+	"cache_50%_hit_ratio":"failed"
 };
 process.on('exit',function(){
 	console.log(errorCheck);
@@ -14,7 +15,7 @@ process.on('exit',function(){
 
 
 let cache = new Lru(1000, async function(key,callback){
-    if(key.indexOf("cache_eviction_test")===-1)
+    if(key.indexOf("cache_eviction_test")===-1 && key.indexOf("cache_50_hit_ratio_test")===-1)
     setTimeout(function(){
         callback(key+" processed");
 	if(key === "cache_miss_test")
@@ -33,9 +34,9 @@ let cache = new Lru(1000, async function(key,callback){
 		if(benchData.expires===2)
 			errorCheck[key]="ok";
 	}
+	
     },1000);
-    else
-    if(key === "cache_eviction_test")
+    else if(key === "cache_eviction_test")
     {
 	callback(key+" processed");
 	benchData.evict++;
@@ -45,6 +46,10 @@ let cache = new Lru(1000, async function(key,callback){
     else
     {
         callback(key+" processed");
+	if(key.indexOf("cache_50_hit_ratio_test")!==-1)
+	{
+		benchData.miss50++;
+	}
     }
 },1000);
 
@@ -82,3 +87,26 @@ setTimeout(function(){
 		}
 	});
 },3000);
+
+setTimeout(function(){
+
+	let ctrMax = 100; // don't pick too low value, causes some uncertainity on 50% hit ratio
+	function repeat(cur){
+		if(cur>0)
+		for(let i=0;i<900;i++)
+		{
+			cache.get("cache_50_hit_ratio_test"+parseInt(Math.random()*2000,10),function(data){
+				benchData.access50++;
+				if(benchData.access50===900)
+				{			
+					benchData.access50=0;		
+					if(benchData.miss50>400*ctrMax && benchData.miss50< 500*ctrMax)
+						errorCheck["cache_50%_hit_ratio"]="ok";		
+					repeat(cur-1);			
+				}
+			});
+		}
+	}
+
+	repeat(ctrMax);
+},5000);
