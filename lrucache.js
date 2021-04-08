@@ -22,7 +22,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 	let ctrEvict = parseInt(cacheSize/2,10);
 	let loadData = callbackBackingStoreLoad;
 	this.get = function(key,callbackPrm){
-		console.log(key);console.log(mapping);
+		
 		let callback = callbackPrm;
 		if(key in mappingInFlightMiss)
 		{
