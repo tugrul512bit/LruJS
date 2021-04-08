@@ -4,11 +4,13 @@ cacheSize: number of elements in cache, constant, must be greater than or equal 
 callbackBackingStoreLoad: user-given cache-miss function to load data from datastore
 elementLifeTimeMs: maximum miliseconds before an element is invalidated, only invalidated at next get() call with its key
 */
+
 let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 	let me = this;
 	let maxWait = elementLifeTimeMs;
 	let size = parseInt(cacheSize,10);
 	let mapping = {};
+	let mappingInFlightMiss = {};
 	let buf = [];
 	for(let i=0;i<size;i++)
 	{
@@ -20,11 +22,22 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 	let ctrEvict = parseInt(cacheSize/2,10);
 	let loadData = callbackBackingStoreLoad;
 	this.get = function(key,callbackPrm){
-		
+		console.log(key);console.log(mapping);
 		let callback = callbackPrm;
-		if(key in mapping)
+		if(key in mappingInFlightMiss)
 		{
 
+			setTimeout(function(){
+				me.get(key,function(newData){
+					callback(newData);
+				});
+			},0);
+			return;
+		}
+
+		if(key in mapping)
+		{
+			
 			// RAM speed data
 			if((Date.now() - buf[mapping[key]].time) > maxWait)
 			{
@@ -85,14 +98,16 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 					ctrEvict=0;
 				}
 			}
-			delete mapping[buf[ctrFound].key];
 			
-		
-			loadData(key,function(res){
+			mappingInFlightMiss[key]=true;
+			let f = function(res){
+				delete mapping[buf[ctrFound].key];
 				buf[ctrFound] = {data: res, visited:false, key:key, time:Date.now(), locked:false};
+				mapping[key] = ctrFound;
 				callback(buf[ctrFound].data);
-				mapping[key] = ctrFound;				
-			});
+				delete mappingInFlightMiss[key];		
+			};
+			loadData(key,f);
 
 		}
 	};
