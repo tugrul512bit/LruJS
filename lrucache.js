@@ -11,21 +11,21 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 	let size = parseInt(cacheSize,10);
 	let mapping = {};
 	let mappingInFlightMiss = {};
-	let bufData = [];
-	let bufVisited = [];
-	let bufKey = [];
-	let bufTime = [];
-	let bufLocked = [];
+	let bufData = new Array(size);
+	let bufVisited = new Uint8Array(size);
+	let bufKey = new Array(size);
+	let bufTime = new Float64Array(size);
+	let bufLocked = new Uint8Array(size);
 	for(let i=0;i<size;i++)
 	{
 		let rnd = Math.random();
 		mapping[rnd] = i;
 		
-		bufData.push("");
-		bufVisited.push(false);
-		bufKey.push(rnd);
-		bufTime.push(0);
-		bufLocked.push(false);
+		bufData[i]="";
+		bufVisited[i]=0;
+		bufKey[i]=rnd;
+		bufTime[i]=0;
+		bufLocked[i]=0;
 	}
 	let ctr = 0;
 	let ctrEvict = parseInt(cacheSize/2,10);
@@ -87,7 +87,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 			}
 			else
 			{
-				bufVisited[slot]=true;
+				bufVisited[slot]=1;
 				bufTime[slot] = Date.now();
 				callback(bufData[slot]);
 			}
@@ -101,7 +101,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 				// give slot a second chance before eviction
 				if(!bufLocked[ctr] && bufVisited[ctr])
 				{
-					bufVisited[ctr]=false;
+					bufVisited[ctr]=0;
 				}
 				ctr++;
 				if(ctr >= size)
@@ -113,7 +113,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 				if(!bufLocked[ctrEvict] && !bufVisited[ctrEvict])
 				{
 					// evict
-					bufLocked[ctrEvict] = true;
+					bufLocked[ctrEvict] = 1;
 					inFlightMissCtr++;
 					ctrFound = ctrEvict;
 				}
@@ -125,15 +125,15 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 				}
 			}
 			
-			mappingInFlightMiss[key]=true;
+			mappingInFlightMiss[key]=1;
 			let f = function(res){
 				delete mapping[bufKey[ctrFound]];
 
 				bufData[ctrFound]=res;
-				bufVisited[ctrFound]=false;
+				bufVisited[ctrFound]=0;
 				bufKey[ctrFound]=key;
 				bufTime[ctrFound]=Date.now();
-				bufLocked[ctrFound]=false;
+				bufLocked[ctrFound]=0;
 
 				mapping[key] = ctrFound;
 				callback(bufData[ctrFound]);
