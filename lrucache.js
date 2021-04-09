@@ -24,6 +24,18 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 	this.get = function(key,callbackPrm){
 		
 		let callback = callbackPrm;
+		
+		// stop dead-lock when many async get calls are made
+		if(Object.keys(mappingInFlightMiss).length>=size)
+             	{
+               		setTimeout(function(){
+				me.get(key,function(newData){
+					callback(newData);
+				});
+			},0);
+               		return;
+	     	}
+		
 		if(key in mappingInFlightMiss)
 		{
 
