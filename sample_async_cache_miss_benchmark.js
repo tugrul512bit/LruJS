@@ -1,5 +1,5 @@
 "use strict";
-// number of asynchronous accessors(1000 here) need to be equal to or less than cache size(1000 here) or it makes dead-lock
+// number of asynchronous accessors(1000 here) need to be equal to or less than cache size(1000 here) or it makes a temporary dead-lock that slows down the execution
 let Lru = require("./lrucache.js").Lru;
 
 let cache = new Lru(1000, async function(key,callback){
