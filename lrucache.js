@@ -6,16 +6,17 @@ elementLifeTimeMs: maximum miliseconds before an element is invalidated, only in
 */
 
 let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
-	let me = this;
-	let maxWait = elementLifeTimeMs;
-	let size = parseInt(cacheSize,10);
-	let mapping = {};
-	let mappingInFlightMiss = {};
-	let bufData = new Array(size);
-	let bufVisited = new Uint8Array(size);
-	let bufKey = new Array(size);
-	let bufTime = new Float64Array(size);
-	let bufLocked = new Uint8Array(size);
+	const me = this;
+	
+	const maxWait = elementLifeTimeMs;
+	const size = parseInt(cacheSize,10);
+	const mapping = {};
+	const mappingInFlightMiss = {};
+	const bufData = new Array(size);
+	const bufVisited = new Uint8Array(size);
+	const bufKey = new Array(size);
+	const bufTime = new Float64Array(size);
+	const bufLocked = new Uint8Array(size);
 	for(let i=0;i<size;i++)
 	{
 		let rnd = Math.random();
@@ -29,7 +30,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 	}
 	let ctr = 0;
 	let ctrEvict = parseInt(cacheSize/2,10);
-	let loadData = callbackBackingStoreLoad;
+	const loadData = callbackBackingStoreLoad;
 	let inFlightMissCtr = 0;
 	this.get = function(key,callbackPrm){
 		
