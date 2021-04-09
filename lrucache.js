@@ -36,6 +36,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
                		return;
 	     	}
 		
+		// delay the request towards end of the cache-miss completion
 		if(key in mappingInFlightMiss)
 		{
 
@@ -87,6 +88,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 			let ctrFound = -1;
 			while(ctrFound===-1)
 			{
+				// give slot a second chance before eviction
 				if(!buf[ctr].locked && buf[ctr].visited)
 				{
 					buf[ctr].visited=false;
@@ -97,6 +99,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 					ctr=0;
 				}
 
+				// eviction conditions
 				if(!buf[ctrEvict].locked && !buf[ctrEvict].visited)
 				{
 					// evict
