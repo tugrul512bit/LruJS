@@ -21,12 +21,13 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 	let ctr = 0;
 	let ctrEvict = parseInt(cacheSize/2,10);
 	let loadData = callbackBackingStoreLoad;
+	let inFlightMissCtr = 0;
 	this.get = function(key,callbackPrm){
 		
 		let callback = callbackPrm;
 		
 		// stop dead-lock when many async get calls are made
-		if(Object.keys(mappingInFlightMiss).length>=size)
+		if(inFlightMissCtr>=size)
              	{
                		setTimeout(function(){
 				me.get(key,function(newData){
@@ -104,6 +105,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 				{
 					// evict
 					buf[ctrEvict].locked = true;
+					inFlightMissCtr++;
 					ctrFound = ctrEvict;
 				}
 
@@ -120,6 +122,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 				buf[ctrFound] = {data: res, visited:false, key:key, time:Date.now(), locked:false};
 				mapping[key] = ctrFound;
 				callback(buf[ctrFound].data);
+				inFlightMissCtr--;
 				delete mappingInFlightMiss[key];		
 			};
 			loadData(key,f);
