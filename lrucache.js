@@ -11,12 +11,21 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 	let size = parseInt(cacheSize,10);
 	let mapping = {};
 	let mappingInFlightMiss = {};
-	let buf = [];
+	let bufData = [];
+	let bufVisited = [];
+	let bufKey = [];
+	let bufTime = [];
+	let bufLocked = [];
 	for(let i=0;i<size;i++)
 	{
 		let rnd = Math.random();
 		mapping[rnd] = i;
-		buf.push({data:"",visited:false, key:rnd, time:0, locked:false});
+		
+		bufData.push("");
+		bufVisited.push(false);
+		bufKey.push(rnd);
+		bufTime.push(0);
+		bufLocked.push(false);
 	}
 	let ctr = 0;
 	let ctrEvict = parseInt(cacheSize/2,10);
@@ -51,12 +60,12 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 
 		if(key in mapping)
 		{
-			
+			let slot = mapping[key];
 			// RAM speed data
-			if((Date.now() - buf[mapping[key]].time) > maxWait)
+			if((Date.now() - bufTime[slot]) > maxWait)
 			{
 				
-				if(buf[mapping[key]].locked)
+				if(bufLocked[slot])
 				{										
 					setTimeout(function(){
 						me.get(key,function(newData){
@@ -78,9 +87,9 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 			}
 			else
 			{
-				buf[mapping[key]].visited=true;
-				buf[mapping[key]].time = Date.now();
-				callback(buf[mapping[key]].data);
+				bufVisited[slot]=true;
+				bufTime[slot] = Date.now();
+				callback(bufData[slot]);
 			}
 		}
 		else
@@ -90,9 +99,9 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 			while(ctrFound===-1)
 			{
 				// give slot a second chance before eviction
-				if(!buf[ctr].locked && buf[ctr].visited)
+				if(!bufLocked[ctr] && bufVisited[ctr])
 				{
-					buf[ctr].visited=false;
+					bufVisited[ctr]=false;
 				}
 				ctr++;
 				if(ctr >= size)
@@ -101,10 +110,10 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 				}
 
 				// eviction conditions
-				if(!buf[ctrEvict].locked && !buf[ctrEvict].visited)
+				if(!bufLocked[ctrEvict] && !bufVisited[ctrEvict])
 				{
 					// evict
-					buf[ctrEvict].locked = true;
+					bufLocked[ctrEvict] = true;
 					inFlightMissCtr++;
 					ctrFound = ctrEvict;
 				}
@@ -118,10 +127,16 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 			
 			mappingInFlightMiss[key]=true;
 			let f = function(res){
-				delete mapping[buf[ctrFound].key];
-				buf[ctrFound] = {data: res, visited:false, key:key, time:Date.now(), locked:false};
+				delete mapping[bufKey[ctrFound]];
+
+				bufData[ctrFound]=res;
+				bufVisited[ctrFound]=false;
+				bufKey[ctrFound]=key;
+				bufTime[ctrFound]=Date.now();
+				bufLocked[ctrFound]=false;
+
 				mapping[key] = ctrFound;
-				callback(buf[ctrFound].data);
+				callback(bufData[ctrFound]);
 				inFlightMissCtr--;
 				delete mappingInFlightMiss[key];		
 			};
