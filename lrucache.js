@@ -32,9 +32,9 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 	let ctrEvict = parseInt(cacheSize/2,10);
 	const loadData = callbackBackingStoreLoad;
 	let inFlightMissCtr = 0;
-	this.get = function(key,callbackPrm){
-		
-		let callback = callbackPrm;
+	this.get = function(keyPrm,callbackPrm){
+		const key = keyPrm;
+		const callback = callbackPrm;
 		
 		// stop dead-lock when many async get calls are made
 		if(inFlightMissCtr>=size)
