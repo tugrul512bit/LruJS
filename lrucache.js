@@ -32,6 +32,12 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 	let ctrEvict = parseInt(cacheSize/2,10);
 	const loadData = callbackBackingStoreLoad;
 	let inFlightMissCtr = 0;
+	this.reload=function(){
+		for(let i=0;i<size;i++)
+		{
+			bufTime[i]=0;
+		}
+	};
 	this.get = function(keyPrm,callbackPrm){
 		const key = keyPrm;
 		const callback = callbackPrm;
