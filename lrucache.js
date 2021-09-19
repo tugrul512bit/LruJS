@@ -3,6 +3,8 @@
 cacheSize: number of elements in cache, constant, must be greater than or equal to number of asynchronous accessors / cache misses
 callbackBackingStoreLoad: user-given cache-miss function to load data from datastore
 elementLifeTimeMs: maximum miliseconds before an element is invalidated, only invalidated at next get() call with its key
+reload: evicts all cache to reload new values from backing store
+reloadKey: only evicts selected item (to reload its new value on next access)
 */
 
 let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
@@ -36,6 +38,13 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 		for(let i=0;i<size;i++)
 		{
 			bufTime[i]=0;
+		}
+	};
+	this.reloadKey=function(key){
+		for(let i=0;i<size;i++)
+		{
+			if(bufKey[i] === key)
+				bufTime[i]=0;
 		}
 	};
 	this.get = function(keyPrm,callbackPrm){
