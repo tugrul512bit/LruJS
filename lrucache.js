@@ -41,10 +41,9 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 		}
 	};
 	this.reloadKey=function(key){
-		for(let i=0;i<size;i++)
+		if(key in mapping)
 		{
-			if(bufKey[i] === key)
-				bufTime[i]=0;
+			bufTime[mapping[key]]=0;
 		}
 	};
 	this.get = function(keyPrm,callbackPrm){
