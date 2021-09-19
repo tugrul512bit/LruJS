@@ -18,6 +18,10 @@ let cache = new Lru(num_cache_elements, async function(key,callback){
 cache.get("some_key_string",function(data){
     // data comes from datastore or RAM depending on its lifetime left or the key acceess pattern
     // do_something_with(data);
+    
+    // cached value needs to be updated?
+    cache.reloadKey("some_key_string"); // postpones the updating to the cache-miss for overlapping with other cache-misses
+    cache.get("some_key_string",function(newData){ /* use new data */ }); // new value by key is reloaded from backing store
 });
 ```
 Number of "asynchronous" accessors (or number of asynchronous cache-misses) need to be equal to or less than cache size. Otherwise a temporary dead-lock occurs and is solved at a slower performance than non-dead-lock, it is negligible latency if happens rarely.
