@@ -167,8 +167,9 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 			result.push(0);
 		let ctr2 = 0;
 		keys.forEach(function(key){
+                        let ctr3=ctr2++;
 			me.get(key,function(data){
-				result[ctr2++] = data;
+				result[ctr3] = data;
 				ctr--;
 				if(ctr==0)
 				{
