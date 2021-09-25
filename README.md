@@ -3,6 +3,8 @@ Uses string/integer as key, stores any data. Caching algorithm is CLOCK version 
 - Cache-hit: O(1) time complexity, garbage-collection friendly (no node movement, just assignment of values)
 - Cache-miss: O(1) time complexity, asynchronous (1000 async cache misses with 1000ms latency = ~1100ms total latency)
 
+Wiki: https://github.com/tugrul512bit/LruJS/wiki
+
 Easy to use:
 
 ```JavaScript
