@@ -159,6 +159,24 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 
 		}
 	};
+	
+	this.getMultiple = function(callback, ... keys){
+		let result = [];
+		let ctr = keys.length;
+		for(let i=0;i<ctr;i++)
+			result.push(0);
+		let ctr2 = 0;
+		keys.forEach(function(key){
+			me.get(key,function(data){
+				result[ctr2++] = data;
+				ctr--;
+				if(ctr==0)
+				{
+					callback(result);
+				}
+			});
+		});
+	};
 };
 
 exports.Lru = Lru;
