@@ -16,7 +16,8 @@ let cache = new Lru(num_cache_elements, async function(key,callback){
   callback(some_time_taking_io_work_or_heavy_computation(key)); 
 }, element_life_time_miliseconds);
 
-
+// get single data
+// asynchronous!
 cache.get("some_key_string",function(data){
     // data comes from datastore or RAM depending on its lifetime left or the key acceess pattern
     // do_something_with(data);
@@ -26,6 +27,7 @@ cache.get("some_key_string",function(data){
 cache.reloadKey("some_key_string"); // postpones the updating to the cache-miss for overlapping with other cache-misses
 
 // need multiple data at once without callback-hell?
+// asynchronous!
 cache.getMultiple(function(results){ console.log(results); },"some_key_string","another_key_string",3,4,5,"key_test");
 
 ```
