@@ -47,7 +47,7 @@ async function benchmark()
 										JSON.stringify({x:x-1,y:y}), // neighbor left
 										JSON.stringify({x:x+1,y:y})  // neighbor right
 			)).reduce((e1,e2)=>{return e1+e2;})/5.0;
-			console.log("("+x+","+y+") softened pixel value: "+softened_pixel+"     iteration-time: "+(Date.now()-timing)+" milliseconds     cache hit rate="+(100*(cache_hit_and_miss - cache_misses)/cache_hit_and_miss));
+			console.log("("+x+","+y+") softened pixel value: "+softened_pixel+"     iteration-time: "+(Date.now()-timing)+" milliseconds     cache hit ratio="+(100*(cache_hit_and_miss - cache_misses)/cache_hit_and_miss));
 		}
 	}
 }
