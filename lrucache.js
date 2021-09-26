@@ -160,6 +160,15 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 		}
 	};
 	
+	
+	this.getAwaitable = function(key){
+		return new Promise(function(success,fail){ 
+			me.get(key,function(data){
+				success(data);
+			});
+		});
+	}
+	
 	this.getMultiple = function(callback, ... keys){
 		let result = [];
 		let ctr = keys.length;
