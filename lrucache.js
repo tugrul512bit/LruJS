@@ -187,6 +187,14 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000){
 			});
 		});
 	};
+	
+	this.getMultipleAwaitable = function(... keys){
+		return new Promise(function(success,fail){
+			me.getMultiple(function(results){
+				success(results);
+			}, ... keys);
+		});
+	};
 };
 
 exports.Lru = Lru;
