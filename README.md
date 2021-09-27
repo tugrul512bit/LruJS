@@ -33,16 +33,16 @@ let cache = new Lru(num_cache_elements, async function(key,callback){
 	// cache-miss
 	// async
   	read_from_backing_storage(key,function(value){
-	callback(value); // don't forget to call this at end
-  }); 
+		callback(value); // don't forget to call this at end
+  	}); 
 }, element_life_time_miliseconds, async function(key,value,callback){
 
 	// backing-store update
 	// write-miss
 	// async
 	write_to_backing_store(key,value,function(){
-    	callback(); // don't forget to call this at end
-  });
+    		callback(); // don't forget to call this at end
+  	});
 	
 });
 
