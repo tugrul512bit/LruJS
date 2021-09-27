@@ -340,10 +340,14 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 			for(let i=0;i<size;i++)
 			{
 				bufTime[i]=0;
+				if(bufEdited[i] == 1) 
+					ctr1++;
+			}
+
+			for(let i=0;i<size;i++)
+			{
 				if(bufEdited[i] == 1)
 				{		
-					ctr1++;
-
 					// async
 					me.set(bufKey[i],bufData[i],function(val){
 						ctr1--;
