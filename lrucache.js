@@ -71,6 +71,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 	// aType=0: get
 	// aType=1: set
 	function access(keyPrm,callbackPrm,aType,valuePrm){
+		
 		const key = keyPrm;
 		const callback = callbackPrm;
 		const value = valuePrm;
@@ -89,7 +90,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 		// if key is busy, then delay the request towards end of the cache-miss completion
 		if(key in mappingInFlightMiss)
 		{
-
+			
 			setTimeout(function(){
 				// get/set
 				access(key,function(newData){
@@ -129,14 +130,14 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 						inFlightMissCtr++;
 						// update backing-store, this is async
 						saveData(bufKey[slot],bufData[slot],function(){ 
-							
+							delete mappingInFlightMiss[key];	// unlock key
+							bufLocked[slot] = 0;
+							inFlightMissCtr--;
+
 							delete mapping[key]; // disable mapping for current key
 							
 							// re-simulate the access, async
 							access(key,function(newData){
-								delete mappingInFlightMiss[key];	// unlock key
-								inFlightMissCtr--;
-								bufLocked[slot] = 0;
 								callback(newData);
 							},aType,value);
 
@@ -206,7 +207,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 			
 			// user-requested key is now asynchronously in-flight & locked for other operations
 			mappingInFlightMiss[key]=1;
-
+			
 			// eviction function. least recently used data is gone, newest recently used data is assigned
 			let evict = function(res){
 
