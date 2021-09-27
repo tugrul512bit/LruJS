@@ -270,16 +270,16 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 
 	this.getMultiple = function(callback, ... keys){
 		let result = [];
-		let ctr = keys.length;
-		for(let i=0;i<ctr;i++)
+		let ctr1 = keys.length;
+		for(let i=0;i<ctr1;i++)
 			result.push(0);
 		let ctr2 = 0;
 		keys.forEach(function(key){
 			let ctr3 = ctr2++;
 			me.get(key,function(data){
 				result[ctr3] = data;
-				ctr--;
-				if(ctr==0)
+				ctr1--;
+				if(ctr1==0)
 				{
 					callback(result);
 				}
@@ -289,16 +289,16 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 
 	this.setMultiple = function(callback, ... keyValuePairs){
 		let result = [];
-		let ctr = keys.length;
-		for(let i=0;i<ctr;i++)
+		let ctr1 = keys.length;
+		for(let i=0;i<ctr1;i++)
 			result.push(0);
 		let ctr2 = 0;
 		keyValuePairs.forEach(function(pair){
 			let ctr3 = ctr2++;
 			me.set(pair.key,pair.value,function(data){
 				result[ctr3] = data;
-				ctr--;
-				if(ctr==0)
+				ctr1--;
+				if(ctr1==0)
 				{
 					callback(result);
 				}
@@ -319,6 +319,38 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 			me.setMultiple(function(results){
 				success(results);
 			}, ... keyValuePairs);
+		});
+	};
+
+	// push all edited slots to backing-store and reset all slots lifetime to "out of date"
+	this.flush = function(callback){
+		let ctr1 = 0;console.log("!");
+		function waitForReadWrite(callbackW){
+
+			// if there are in-flight cache-misses cache-write-misses or active slot locks, then wait
+			if(Object.keys(mappingInFlightMiss).length > 0 || bufLocked.reduce((e1,e2)=>{return e1+e2;}) > 0)
+			{
+				setTimeout(()=>{ waitForReadWrite(callbackW); },0);
+			}
+			else
+				callbackW();
+		}
+		waitForReadWrite(function(){ 
+			// flush all slots
+			for(let i=0;i<size;i++)
+			{
+				bufTime[i]=0;
+				if(bufEdited[i] == 1)
+				{					
+					me.set(bufKey[i],bufData[i],function(val){
+						ctr1++;
+						if(ctr1 == size)
+						{
+							callback(); // flush complete
+						}
+					});
+				}
+			}
 		});
 	};
 };
