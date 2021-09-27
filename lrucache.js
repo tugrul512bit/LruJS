@@ -260,6 +260,14 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 		});
 	}
 
+	this.setAwaitable = function(key,value){
+		return new Promise(function(success,fail){ 
+			me.set(key,value,function(data){
+				success(data);
+			});
+		});
+	}
+
 	this.getMultiple = function(callback, ... keys){
 		let result = [];
 		let ctr = keys.length;
@@ -267,8 +275,9 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 			result.push(0);
 		let ctr2 = 0;
 		keys.forEach(function(key){
+			let ctr3 = ctr2++;
 			me.get(key,function(data){
-				result[ctr2++] = data;
+				result[ctr3] = data;
 				ctr--;
 				if(ctr==0)
 				{
@@ -278,12 +287,38 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 		});
 	};
 
+	this.setMultiple = function(callback, ... keyValuePairs){
+		let result = [];
+		let ctr = keys.length;
+		for(let i=0;i<ctr;i++)
+			result.push(0);
+		let ctr2 = 0;
+		keyValuePairs.forEach(function(pair){
+			let ctr3 = ctr2++;
+			me.set(pair.key,pair.value,function(data){
+				result[ctr3] = data;
+				ctr--;
+				if(ctr==0)
+				{
+					callback(result);
+				}
+			});
+		});
+	};
 
 	this.getMultipleAwaitable = function(... keys){
 		return new Promise(function(success,fail){
 			me.getMultiple(function(results){
 				success(results);
 			}, ... keys);
+		});
+	};
+
+	this.setMultipleAwaitable = function(... keyValuePairs){
+		return new Promise(function(success,fail){
+			me.setMultiple(function(results){
+				success(results);
+			}, ... keyValuePairs);
 		});
 	};
 };
