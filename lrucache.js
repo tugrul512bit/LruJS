@@ -335,16 +335,19 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 			else
 				callbackW();
 		}
-		waitForReadWrite(function(){ 
+		waitForReadWrite(function(){  
 			// flush all slots
 			for(let i=0;i<size;i++)
 			{
 				bufTime[i]=0;
 				if(bufEdited[i] == 1)
-				{					
+				{		
+					ctr1++;
+
+					// async
 					me.set(bufKey[i],bufData[i],function(val){
-						ctr1++;
-						if(ctr1 == size)
+						ctr1--;
+						if(ctr1 == 0)
 						{
 							callback(); // flush complete
 						}
