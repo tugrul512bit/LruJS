@@ -324,7 +324,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 
 	// push all edited slots to backing-store and reset all slots lifetime to "out of date"
 	this.flush = function(callback){
-		let ctr1 = 0;console.log("!");
+		let ctr1 = 0;
 		function waitForReadWrite(callbackW){
 
 			// if there are in-flight cache-misses cache-write-misses or active slot locks, then wait
