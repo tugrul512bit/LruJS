@@ -11,10 +11,25 @@ Easy to use:
 let Lru = require("./lrucache.js").Lru;
 let num_cache_elements = 1000;
 let element_life_time_miliseconds = 1000;
+
 let cache = new Lru(num_cache_elements, async function(key,callback){
-  // datastore access for filling the missing cache element when user access key
-  callback(some_time_taking_io_work_or_heavy_computation(key)); 
-}, element_life_time_miliseconds);
+  // backing-store read
+  // cache-miss
+  // async
+  read_from_backing_storage(key,function(value){
+  
+    callback(value); // don't forget to call this at end
+  }); 
+}, element_life_time_miliseconds, async function(key,value,callback){
+
+  // backing-store update
+  // write-miss
+  // async
+	write_to_backing_store(key,value,function(){
+    callback(); // don't forget to call this at end
+  });
+	
+});
 
 // get single data
 // asynchronous!
@@ -23,8 +38,13 @@ cache.get("some_key_string",function(data){
     // do_something_with(data);
 });
 
+cache.set("some_key_string",{ foo:"bar" },function(data){
+    // data ({ foo:"bar" }) comes from datastore or RAM depending on its lifetime left or the key acceess pattern
+    // do_something_with(data);
+});
+
 // cached value needs to be updated?
-cache.reloadKey("some_key_string"); // postpones the updating to the cache-miss for overlapping with other cache-misses
+cache.reloadKey("some_key_string"); // postpones the eviction/updating to the cache-miss for overlapping with other cache-misses
 
 // need multiple data at once without callback-hell?
 // asynchronous!
