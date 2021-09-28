@@ -13,8 +13,8 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 	const aTypeSet = 1;
 	const maxWait = elementLifeTimeMs;
 	const size = parseInt(cacheSize,10);
-	const mapping = {};
-	const mappingInFlightMiss = {};
+	const mapping = new Map();
+	const mappingInFlightMiss = new Map();
 	const bufData = new Array(size);
 	const bufVisited = new Uint8Array(size);
 
@@ -27,7 +27,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 	for(let i=0;i<size;i++)
 	{
 		let rnd = Math.random();
-		mapping[rnd] = i;
+		mapping.set(rnd,i);
 		
 		bufData[i]="";
 		bufVisited[i]=0;
@@ -50,7 +50,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 	};
 	// refresh item time-span in cache by triggering eviction
 	this.reloadKey=function(key){
-		if(key in mapping)
+		if(mapping.has(key))
 		{
 			bufTime[mapping[key]]=0;
 		}
@@ -88,7 +88,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 	     	}
 		
 		// if key is busy, then delay the request towards end of the cache-miss completion
-		if(key in mappingInFlightMiss)
+		if(mappingInFlightMiss.has(key))
 		{
 			
 			setTimeout(function(){
@@ -100,10 +100,10 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 			return;
 		}
 
-		if(key in mapping)
+		if(mapping.has(key))
 		{
 			// slot is an element in the circular buffer of CLOCK algorithm
-			let slot = mapping[key];
+			let slot = mapping.get(key);
 
 			// RAM speed data
 			if((Date.now() - bufTime[slot]) > maxWait)
@@ -126,15 +126,15 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 					{
 						bufLocked[slot] = 1;
 						bufEdited[slot]=0;
-						mappingInFlightMiss[key] = 1; // lock key
+						mappingInFlightMiss.set(key,1); // lock key
 						inFlightMissCtr++;
 						// update backing-store, this is async
 						saveData(bufKey[slot],bufData[slot],function(){ 
-							delete mappingInFlightMiss[key];	// unlock key
+							mappingInFlightMiss.delete(key);	// unlock key
 							bufLocked[slot] = 0;
 							inFlightMissCtr--;
 
-							delete mapping[key]; // disable mapping for current key
+							mapping.delete(key); // disable mapping for current key
 							
 							// re-simulate the access, async
 							access(key,function(newData){
@@ -145,7 +145,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 					}
 					else
 					{
-						delete mapping[key]; // disable mapping for current key
+						mapping.delete(key); // disable mapping for current key
 						access(key,function(newData){
 							
 							callback(newData);
@@ -206,12 +206,12 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 			}
 			
 			// user-requested key is now asynchronously in-flight & locked for other operations
-			mappingInFlightMiss[key]=1;
+			mappingInFlightMiss.set(key,1);
 			
 			// eviction function. least recently used data is gone, newest recently used data is assigned
 			let evict = function(res){
 
-				delete mapping[bufKey[ctrFound]];
+				mapping.delete(bufKey[ctrFound]);
 
 				bufData[ctrFound]=res;
 				bufVisited[ctrFound]=0;
@@ -219,10 +219,10 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 				bufTime[ctrFound]=Date.now();
 				bufLocked[ctrFound]=0;
 
-				mapping[key] = ctrFound;
+				mapping.set(key,ctrFound);
 				callback(res);
 				inFlightMissCtr--;
-				delete mappingInFlightMiss[key];
+				mappingInFlightMiss.delete(key);
 			
 			};
 
@@ -328,7 +328,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 		function waitForReadWrite(callbackW){
 
 			// if there are in-flight cache-misses cache-write-misses or active slot locks, then wait
-			if(Object.keys(mappingInFlightMiss).length > 0 || bufLocked.reduce((e1,e2)=>{return e1+e2;}) > 0)
+			if(mappingInFlightMiss.size > 0 || bufLocked.reduce((e1,e2)=>{return e1+e2;}) > 0)
 			{
 				setTimeout(()=>{ waitForReadWrite(callbackW); },0);
 			}
