@@ -1,6 +1,6 @@
-Uses ![any type](https://github.com/tugrul512bit/LruJS/wiki/Types-of-Keys) as key, stores any data. Caching algorithm is CLOCK version of LRU(approximation) with two hands (1 hand = second chance, 1 hand = eviction).
+This asynchronous LRU cache uses ![any type](https://github.com/tugrul512bit/LruJS/wiki/Types-of-Keys) as keys any values. Caching algorithm is CLOCK version of LRU with two hands (1 hand = second chance, 1 hand = eviction).
 
-- Cache-hit: O(1) time complexity
+- Cache-hit: O(1) time complexity, this is the only serial operation
 - Cache-miss: O(1) time complexity, asynchronous (1000s of async cache misses with 1000ms latency = ~1100ms total latency)
 - Read-caching & write-caching: garbage-collection friendly (just assignment on circular buffer, zero node movement)
 - Multiple keys reading/writing: asynchronous between each other and asynchronous to the caller (has Promise versions too for awaitability)
