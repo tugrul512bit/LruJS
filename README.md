@@ -4,7 +4,7 @@ Uses ![any type](https://github.com/tugrul512bit/LruJS/wiki/Types-of-Keys) as ke
 - Cache-miss: O(1) time complexity, asynchronous (1000s of async cache misses with 1000ms latency = ~1100ms total latency)
 - Read-caching & write-caching: garbage-collection friendly (just assignment on circular buffer, zero node movement)
 - Multiple keys reading/writing: asynchronous between each other and asynchronous to the caller (has Promise versions too for awaitability)
-- Passive caching, no extra scheduled tasks, no extra processes. Only works whenever cache is accessed by get/set methods.
+- Passive caching, no extra scheduled tasks (other than reordering the operations in-flight), no extra processes. Only works whenever cache is accessed by get/set methods.
 
 Wiki: https://github.com/tugrul512bit/LruJS/wiki
 
