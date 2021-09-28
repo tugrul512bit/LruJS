@@ -1,4 +1,4 @@
-Uses !(any type)[https://github.com/tugrul512bit/LruJS/wiki/Types-of-Keys] as key, stores any data. Caching algorithm is CLOCK version of LRU(approximation) with two hands (1 hand = second chance, 1 hand = eviction).
+Uses ![any type](https://github.com/tugrul512bit/LruJS/wiki/Types-of-Keys) as key, stores any data. Caching algorithm is CLOCK version of LRU(approximation) with two hands (1 hand = second chance, 1 hand = eviction).
 
 - Cache-hit: O(1) time complexity, garbage-collection friendly (no node movement, just assignment of values)
 - Cache-miss: O(1) time complexity, asynchronous (1000 async cache misses with 1000ms latency = ~1100ms total latency)
