@@ -64,10 +64,20 @@ cache.set("some_key_string",{ foo:"bar" },function(data){
 // cached value needs to be updated?
 cache.reloadKey("some_key_string"); // postpones the eviction/updating to the cache-miss for overlapping with other cache-misses
 
-// need multiple data at once without callback-hell?
-// asynchronous!
+// need multiple data at once?
+// async
 cache.getMultiple(function(results){ console.log(results); },"some_key_string","another_key_string",3,4,5,"key_test");
 
+
+async function res(){
+
+	// without callback-hell?
+	// asynchronous!
+	let results = await cache.getMultipleAwaitable("some_key_string","another_key_string",3,4,5,"key_test");
+	console.log(results);
+}
+
+res();
 
 
 ```
