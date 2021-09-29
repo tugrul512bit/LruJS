@@ -1,12 +1,28 @@
 'use strict';
 /* 
 cacheSize: number of elements in cache, constant, must be greater than or equal to number of asynchronous accessors / cache misses
-callbackBackingStoreLoad: user-given cache-miss function to load data from datastore
-elementLifeTimeMs: maximum miliseconds before an element is invalidated, only invalidated at next get() call with its key
-reload: evicts all cache to reload new values from backing store
-reloadKey: only evicts selected item (to reload its new value on next access)
-*/
+callbackBackingStoreLoad: user-given cache(read)-miss function to load data from datastore
+	takes 2 parameters: key, callback
+	example:
+		async function(key,callback){ 
+			redis.get(key,function(data,err){ 
+				callback(data); 
+			}); 
+		}
+callbackBackingStoreSave: user-given cache(write)-miss function to save data to datastore
+	takes 3 parameters: key, value, callback
+	example:
+		async function(key,value,callback){ 
+			redis.set(key,value,function(err){ 
+				callback(); 
+			}); 
+		}
+elementLifeTimeMs: maximum miliseconds before an element is invalidated, only invalidated at next get() or set() call with its key
+flush(): all in-flight get/set accesses are awaited and all edited keys are written back to backing-store. flushes the cache.
+reload(): evicts all cache to reload new values from backing store
+reloadKey(): only evicts selected item (to reload its new value on next access)
 
+*/
 let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,callbackBackingStoreSave){
 	const me = this;
 	const aTypeGet = 0;
