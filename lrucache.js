@@ -264,6 +264,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 		});
 	}
 
+	// as many keys as required can be given, separated by commas
 	this.getMultiple = function(callback, ... keys){
 		let result = [];
 		let ctr1 = keys.length;
@@ -283,6 +284,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 		});
 	};
 
+	// as many key-value pairs ( in form of { key:foo, value:bar } ) can be given, separated by commas
 	this.setMultiple = function(callback, ... keyValuePairs){
 		let result = [];
 		let ctr1 = keyValuePairs.length;
@@ -302,6 +304,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 		});
 	};
 
+	// as many keys as required can be given, separated by commas
 	this.getMultipleAwaitable = function(... keys){
 		return new Promise(function(success,fail){
 			me.getMultiple(function(results){
@@ -310,6 +313,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 		});
 	};
 
+	// as many key-value pairs ( in form of { key:foo, value:bar } ) can be given, separated by commas
 	this.setMultipleAwaitable = function(... keyValuePairs){
 		return new Promise(function(success,fail){
 			me.setMultiple(function(results){
