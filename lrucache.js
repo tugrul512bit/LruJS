@@ -321,7 +321,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 			}, ... keyValuePairs);
 		});
 	};
-
+	
 	// push all edited slots to backing-store and reset all slots lifetime to "out of date"
 	this.flush = function(callback){
 		let ctr1 = 0;
@@ -330,12 +330,12 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 			// if there are in-flight cache-misses cache-write-misses or active slot locks, then wait
 			if(mappingInFlightMiss.size > 0 || bufLocked.reduce((e1,e2)=>{return e1+e2;}) > 0)
 			{
-				setTimeout(()=>{ waitForReadWrite(callbackW); },0);
+				setTimeout(()=>{ waitForReadWrite(callbackW); },10);
 			}
 			else
 				callbackW();
 		}
-		waitForReadWrite(function(){  
+		waitForReadWrite(async function(){  
 			// flush all slots
 			for(let i=0;i<size;i++)
 			{
@@ -348,16 +348,11 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 			{
 				if(bufEdited[i] == 1)
 				{		
-					// async
-					me.set(bufKey[i],bufData[i],function(val){
-						ctr1--;
-						if(ctr1 == 0)
-						{
-							callback(); // flush complete
-						}
-					});
+					// less concurrency pressure, less failure
+					await me.setAwaitable(bufKey[i],bufData[i]);
 				}
 			}
+			callback(); // flush complete
 		});
 	};
 };
