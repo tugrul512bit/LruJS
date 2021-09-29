@@ -17,18 +17,14 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 	const mappingInFlightMiss = new Map();
 	const bufData = new Array(size);
 	const bufVisited = new Uint8Array(size);
-
-	// todo: add write-cache operations. set(key,value,callback) setMultiple(keys, values, callback) setAwaitable(key,value) setMultipleAwaitable(keys,values)
 	const bufEdited = new Uint8Array(size);
-
 	const bufKey = new Array(size);
 	const bufTime = new Float64Array(size);
 	const bufLocked = new Uint8Array(size);
 	for(let i=0;i<size;i++)
 	{
 		let rnd = Math.random();
-		mapping.set(rnd,i);
-		
+		mapping.set(rnd,i);		
 		bufData[i]="";
 		bufVisited[i]=0;
 		bufEdited[i]=0;
@@ -289,7 +285,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 
 	this.setMultiple = function(callback, ... keyValuePairs){
 		let result = [];
-		let ctr1 = keys.length;
+		let ctr1 = keyValuePairs.length;
 		for(let i=0;i<ctr1;i++)
 			result.push(0);
 		let ctr2 = 0;
@@ -321,7 +317,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 			}, ... keyValuePairs);
 		});
 	};
-	
+
 	// push all edited slots to backing-store and reset all slots lifetime to "out of date"
 	this.flush = function(callback){
 
