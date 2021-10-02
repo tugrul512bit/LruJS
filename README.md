@@ -32,6 +32,13 @@ let cache = new Lru(num_cache_elements, async function(key,callback){
 	  	 callback();
 	});
 });
+
+
+cache.get("readme.md",async function(data){
+    cache.set("newfile.txt",data,async function(data){
+
+    });
+})};
 ```
 Number of "asynchronous" accessors (or number of asynchronous cache-misses) need to be equal to or less than cache size. Otherwise a temporary dead-lock occurs and is solved at a slower performance than non-dead-lock, it is negligible latency if happens rarely.
 
