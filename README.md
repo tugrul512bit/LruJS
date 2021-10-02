@@ -8,78 +8,30 @@ This asynchronous LRU cache uses ![any type](https://github.com/tugrul512bit/Lru
 
 Wiki: https://github.com/tugrul512bit/LruJS/wiki
 
-Easy to use:
+File caching example:
 
 ```JavaScript
 "use strict"
 
-// user's functions to access some slow storage
-let simulated_backing_store = { "some_key_string":5,"3":1,"4":2,"5":3,"key_test":4,"another_key_string":10 };
-function read_from_backing_storage(key,callback){
-	setTimeout(()=>	callback(simulated_backing_store[key]),1000);
-}
-
-function write_to_backing_store(key,value,callback){
-	setTimeout(()=>{
-		simulated_backing_store[key]=value;
-		callback();
-	},1000);
-}
+// backing-store
+var fs = require("fs");
 
 // LRU cache
 let Lru = require("./lrucache.js").Lru;
-let num_cache_elements = 1000;
-let element_life_time_miliseconds = 1000;
+let num_cache_elements = 950;
+let element_life_time_miliseconds = 10000;
 
 let cache = new Lru(num_cache_elements, async function(key,callback){
-	// backing-store read
-	// cache-miss
-	// async
-  	read_from_backing_storage(key,function(value){
-		callback(value); // don't forget to call this at end
-  	}); 
+	fs.readFile(key, function(err, buf) {
+		if (err) console.log(err);
+	  	callback(buf.toString());
+	});
 }, element_life_time_miliseconds, async function(key,value,callback){
-
-	// backing-store update
-	// write-miss
-	// async
-	write_to_backing_store(key,value,function(){
-    		callback(); // don't forget to call this at end
-  	});
-	
+	fs.writeFile(key, value, (err) => {
+	 	 if (err) console.log(err);
+	  	 callback();
+	});
 });
-
-// get single data
-// asynchronous!
-cache.get("some_key_string",function(data){
-    console.log("get: "+data);
-});
-
-// set single data
-// async
-cache.set("some_key_string",{ foo:"bar" },function(data){
-	console.log("set: "+data.foo);
-});
-
-// cached value needs to be updated?
-cache.reloadKey("some_key_string"); // postpones the eviction/updating to the cache-miss for overlapping with other cache-misses
-
-// need multiple data at once?
-// async
-cache.getMultiple(function(results){ console.log(results); },"some_key_string","another_key_string",3,4,5,"key_test");
-
-
-async function res(){
-
-	// without callback-hell?
-	// asynchronous!
-	let results = await cache.getMultipleAwaitable("some_key_string","another_key_string",3,4,5,"key_test");
-	console.log(results);
-}
-
-res();
-
-
 ```
 Number of "asynchronous" accessors (or number of asynchronous cache-misses) need to be equal to or less than cache size. Otherwise a temporary dead-lock occurs and is solved at a slower performance than non-dead-lock, it is negligible latency if happens rarely.
 
