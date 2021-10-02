@@ -22,18 +22,23 @@ let num_cache_elements = 950;
 let element_life_time_miliseconds = 10000;
 
 let cache = new Lru(num_cache_elements, async function(key,callback){
+
+        // cache read miss 
 	fs.readFile(key, function(err, buf) {
 		if (err) console.log(err);
 	  	callback(buf.toString());
 	});
 }, element_life_time_miliseconds, async function(key,value,callback){
+
+        // cache write miss
 	fs.writeFile(key, value, (err) => {
 	 	 if (err) console.log(err);
 	  	 callback();
 	});
 });
 
-
+// only interact with cache, all cache misses are 
+// automatically projected to the backing-store
 cache.get("readme.md",async function(data){
     cache.set("newfile.txt",data,async function(data){
 
