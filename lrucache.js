@@ -1,5 +1,6 @@
 'use strict';
 /* 
+* Asynchronous LRU approximation (CLOCK - second chance implementation)
 * cacheSize: number of elements in cache, constant, must be greater than or equal to number of asynchronous accessors / cache misses
 * callbackBackingStoreLoad: user-given cache(read)-miss function to load data from datastore
 *	takes 2 parameters: key, callback
