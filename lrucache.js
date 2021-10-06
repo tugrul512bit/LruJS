@@ -1,29 +1,29 @@
 'use strict';
 /* 
-* Asynchronous LRU approximation (CLOCK - second chance implementation)
-* cacheSize: number of elements in cache, constant, must be greater than or equal to number of asynchronous accessors / cache misses
-* callbackBackingStoreLoad: user-given cache(read)-miss function to load data from datastore
-*	takes 2 parameters: key, callback
-*	example:
-*		async function(key,callback){ 
-*			redis.get(key,function(data,err){ 
-*				callback(data); 
-*			}); 
-*		}
-* callbackBackingStoreSave: user-given cache(write)-miss function to save data to datastore
-*	takes 3 parameters: key, value, callback
-*	example:
-*		async function(key,value,callback){ 
-*			redis.set(key,value,function(err){ 
-*				callback(); 
-*			}); 
-*		}
-* elementLifeTimeMs: maximum miliseconds before an element is invalidated, only invalidated at next get() or set() call with its key
-* flush(): all in-flight get/set accesses are awaited and all edited keys are written back to backing-store. flushes the cache.
-* reload(): evicts all cache to reload new values from backing store
-* reloadKey(): only evicts selected item (to reload its new value on next access)
-*
+cacheSize: number of elements in cache, constant, must be greater than or equal to number of asynchronous accessors / cache misses
+callbackBackingStoreLoad: user-given cache(read)-miss function to load data from datastore
+	takes 2 parameters: key, callback
+	example:
+		async function(key,callback){ 
+			redis.get(key,function(data,err){ 
+				callback(data); 
+			}); 
+		}
+callbackBackingStoreSave: user-given cache(write)-miss function to save data to datastore
+	takes 3 parameters: key, value, callback
+	example:
+		async function(key,value,callback){ 
+			redis.set(key,value,function(err){ 
+				callback(); 
+			}); 
+		}
+elementLifeTimeMs: maximum miliseconds before an element is invalidated, only invalidated at next get() or set() call with its key
+flush(): all in-flight get/set accesses are awaited and all edited keys are written back to backing-store. flushes the cache.
+reload(): evicts all cache to reload new values from backing store
+reloadKey(): only evicts selected item (to reload its new value on next access)
+
 */
+
 let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,callbackBackingStoreSave){
 	const me = this;
 	const aTypeGet = 0;
@@ -88,30 +88,17 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 		const key = keyPrm;
 		const callback = callbackPrm;
 		const value = valuePrm;
-		// stop dead-lock when many async get calls are made
-		if(inFlightMissCtr>=size)
+		// stop dead-lock when many async get calls are made or if key is busy
+		if(inFlightMissCtr>=size || mappingInFlightMiss.has(key))
              	{
                		setTimeout(function(){
 				// get/set
-				access(key,function(newData){
-					callback(newData);
-				},aType,value);
+				access(key,callback,aType,value);
 			},0);
                		return;
 	     	}
 		
-		// if key is busy, then delay the request towards end of the cache-miss completion
-		if(mappingInFlightMiss.has(key))
-		{
-			
-			setTimeout(function(){
-				// get/set
-				access(key,function(newData){
-					callback(newData);
-				},aType,value);
-			},0);
-			return;
-		}
+
 
 		if(mapping.has(key))
 		{
@@ -126,9 +113,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 				if(bufLocked[slot])
 				{										
 					setTimeout(function(){
-						access(key,function(newData){
-							callback(newData);
-						},aType,value);
+						access(key,callback,aType,value);
 					},0);
 					
 				}
@@ -150,19 +135,14 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 							mapping.delete(key); // disable mapping for current key
 							
 							// re-simulate the access, async
-							access(key,function(newData){
-								callback(newData);
-							},aType,value);
+							access(key,callback,aType,value);
 
 						});
 					}
 					else
 					{
 						mapping.delete(key); // disable mapping for current key
-						access(key,function(newData){
-							
-							callback(newData);
-						},aType,value);
+						access(key,callback,aType,value);
 					}
 				}
 				
@@ -267,17 +247,13 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 
 	this.getAwaitable = function(key){
 		return new Promise(function(success,fail){ 
-			me.get(key,function(data){
-				success(data);
-			});
+			me.get(key,success);
 		});
 	}
 
 	this.setAwaitable = function(key,value){
 		return new Promise(function(success,fail){ 
-			me.set(key,value,function(data){
-				success(data);
-			});
+			me.set(key,value,success);
 		});
 	}
 
@@ -324,18 +300,14 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 	// as many keys as required can be given, separated by commas
 	this.getMultipleAwaitable = function(... keys){
 		return new Promise(function(success,fail){
-			me.getMultiple(function(results){
-				success(results);
-			}, ... keys);
+			me.getMultiple(success, ... keys);
 		});
 	};
 
 	// as many key-value pairs ( in form of { key:foo, value:bar } ) can be given, separated by commas
 	this.setMultipleAwaitable = function(... keyValuePairs){
 		return new Promise(function(success,fail){
-			me.setMultiple(function(results){
-				success(results);
-			}, ... keyValuePairs);
+			me.setMultiple(success, ... keyValuePairs);
 		});
 	};
 
