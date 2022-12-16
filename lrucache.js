@@ -106,7 +106,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 			let slot = mapping.get(key);
 
 			// RAM speed data
-			if( (maxWait > 0) &&  ((Date.now() - bufTime[slot]) > maxWait))
+			if( (maxWait == 0) ||  ((Date.now() - bufTime[slot]) > maxWait))
 			{
 				
 				// if slot is locked by another operation, postpone the current operation
@@ -339,4 +339,229 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 	};
 };
 
+/* direct-mapped cache that has no life-time setting, only-integer keys and even faster access than LRU version at the cost of a worse cache-hit-pattern
+	rounds-up cache size to the next 2^x  (1000 becomes 1024, 2000 become 2048, 5000 becomes 8192)
+	key(integer) is given 0<=x<=N, negative values not supported
+*/
+let DirectMapped = function(cacheSize,callbackBackingStoreLoad,callbackBackingStoreSave){
+	const me = this;
+	const aTypeGet = 0;
+	const aTypeSet = 1;
+	let asyncCacheMisses = 0;
+	let cacheSizeTmp = parseInt(cacheSize,10);
+	let tmp = 1;
+	while(tmp<cacheSizeTmp)
+	{
+		tmp *= 2;
+	}
+	cacheSizeTmp = tmp;
+
+
+	const size = parseInt(cacheSizeTmp,10);
+	
+	// AND mask used for x%(2^something) = x&(2^something - 1)
+	const fastMod = size-1;
+	const loadData = callbackBackingStoreLoad;
+	const saveData = callbackBackingStoreSave;
+	const bufData = new Array(size);
+	const bufEdited = new Uint8Array(size);
+	const bufLocked = new Uint8Array(size);
+	const bufKey = new Array(size);
+	for(let i=0;i<size;i++)
+	{
+		bufData[i]="";
+		bufEdited[i]=0;
+		bufLocked[i]=0;
+		bufKey[i]=-1 ;
+	}
+
+	// get value by key
+	this.get = function(keyPrm,callbackPrm){
+		// aType=0: get
+		access(keyPrm,callbackPrm,aTypeGet);
+	};
+
+	// set value by key (callback returns same value)
+	this.set = function(keyPrm,valuePrm,callbackPrm){
+		// aType=1: set
+		access(keyPrm,callbackPrm,aTypeSet,valuePrm);
+	};
+
+	this.setAwaitable = function(key,value){
+		return new Promise(function(success,fail){ 
+			me.set(key,value,success);
+		});
+	}
+
+	// as many keys as required can be given, separated by commas
+	this.getMultiple = function(callback, ... keys){
+		let result = [];
+		let ctr1 = keys.length;
+		for(let i=0;i<ctr1;i++)
+			result.push(0);
+		let ctr2 = 0;
+		keys.forEach(function(key){
+			let ctr3 = ctr2++;
+			me.get(key,function(data){
+				result[ctr3] = data;
+				ctr1--;
+				if(ctr1==0)
+				{
+					callback(result);
+				}
+			});
+		});
+	};
+
+	// as many keys as required can be given, separated by commas
+	this.getMultipleAwaitable = function(... keys){
+		return new Promise(function(success,fail){
+			me.getMultiple(success, ... keys);
+		});
+	};
+
+	// push all edited slots to backing-store and reset all slots lifetime to "out of date"
+	this.flush = function(callback){
+
+		function waitForReadWrite(callbackW){
+
+			// if there are in-flight cache-misses cache-write-misses or active slot locks, then wait
+			if(bufLocked.reduce((e1,e2)=>{return e1+e2;}) > 0)
+			{
+				setTimeout(()=>{ waitForReadWrite(callbackW); },10);
+			}
+			else
+				callbackW();
+		}
+		waitForReadWrite(async function(){  
+			for(let i=0;i<size;i++)
+			{
+				if(bufEdited[i] == 1)
+				{		
+					// less concurrency pressure, less failure
+					await me.setAwaitable(bufKey[i],bufData[i]);
+				}
+			}
+			callback(); // flush complete
+		});
+	};
+
+	// key+data to evict, slot to update
+	function evict(key,slot,callback){
+
+		// if slot is dirty, evict it first, then get new value	
+		if(bufEdited[slot])
+		{
+			saveData(key,bufData[slot],function(){ 
+					bufEdited[slot]=0;
+					callback();
+			});
+		}
+		else // can be overwritten by new value from the data-store
+		{
+			callback();
+		}
+		
+	}
+
+	// aType=0: get
+	// aType=1: set
+	function access(keyPrm,callbackPrm,aType,valuePrm){
+		const key = keyPrm;
+		const callback = callbackPrm;
+		const value = valuePrm;
+
+		// modulus based slot selection for direct-mapped cache
+		const slot = key & fastMod;
+
+		// if slot is busy or all slots are busy, postpone the operation
+		if(asyncCacheMisses>=size || bufLocked[slot])
+		{
+               		setTimeout(function(){
+				// get/set
+				access(key,callback,aType,value);
+			},0);
+               		return;
+		}
+
+		// GET operation
+		if(aType == aTypeGet)
+		{
+			// key is found in cache ==> cache hit
+			if(bufKey[slot] == key)
+				callback(bufData[slot]);
+			else // key does not match (collision) => evict it & put new key's data asynchronously
+			{
+				// in progress
+				bufLocked[slot]=1;
+				asyncCacheMisses++;
+
+				// if slot has not been used yet
+				if(bufKey[slot] == -1)
+				{
+					loadData(key,function(newData){
+						bufKey[slot]=key;
+						bufData[slot]=newData;
+						bufLocked[slot]=0; 
+						asyncCacheMisses--;
+						callback(bufData[slot]); 
+					});
+				} // if slot is in use by another key
+				else
+				{
+					evict(bufKey[slot],slot,function(){
+						loadData(key,function(newData){
+							bufKey[slot]=key;
+							bufData[slot]=newData;
+							bufLocked[slot]=0; 
+							asyncCacheMisses--;
+							callback(bufData[slot]); 
+						});
+
+					});
+				}
+			}
+		}
+		else // SET operation
+		{
+			// key is found in cache ==> cache hit
+			if(bufKey[slot] == key)
+			{
+				bufData[slot]=value;
+				bufEdited[slot]=1;
+				callback(bufData[slot]);
+			}
+			else // there is key collision ==> evict
+			{	
+				// in progress
+				bufLocked[slot]=1;
+				asyncCacheMisses++;
+
+				// if slot has not been used yet
+				if(bufKey[slot] == -1)
+				{
+						bufKey[slot]=key;
+						bufData[slot]=value; 
+						bufLocked[slot]=0;
+						bufEdited[slot]=1; // sign as dirty
+						asyncCacheMisses--;
+						callback(bufData[slot]); 
+				}
+				else
+				{
+					evict(bufKey[slot],slot,function(){ 
+						bufKey[slot]=key;
+						bufData[slot]=value; 
+						bufLocked[slot]=0;
+						bufEdited[slot]=1; // sign as dirty
+						asyncCacheMisses--;
+						callback(bufData[slot]); 
+					});
+				}
+			}
+		}
+	}
+};
+
 exports.Lru = Lru;
+exports.DirectMapped = DirectMapped;
