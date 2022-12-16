@@ -26,6 +26,7 @@ reloadKey(): only evicts selected item (to reload its new value on next access)
 
 let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,callbackBackingStoreSave){
 	const me = this;
+	let flushOp = 0;
 	const aTypeGet = 0;
 	const aTypeSet = 1;
 	const maxWait = elementLifeTimeMs;
@@ -106,7 +107,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 			let slot = mapping.get(key);
 
 			// RAM speed data
-			if( (maxWait == 0) ||  ((Date.now() - bufTime[slot]) > maxWait))
+			if( flushOp || ( (maxWait != 0) &&  ((Date.now() - bufTime[slot]) > maxWait)))
 			{
 				
 				// if slot is locked by another operation, postpone the current operation
@@ -313,9 +314,9 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 
 	// push all edited slots to backing-store and reset all slots lifetime to "out of date"
 	this.flush = function(callback){
-
+		
 		function waitForReadWrite(callbackW){
-
+			flushOp=1;
 			// if there are in-flight cache-misses cache-write-misses or active slot locks, then wait
 			if(mappingInFlightMiss.size > 0 || bufLocked.reduce((e1,e2)=>{return e1+e2;}) > 0)
 			{
@@ -334,6 +335,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 					await me.setAwaitable(bufKey[i],bufData[i]);
 				}
 			}
+			flushOp=0;
 			callback(); // flush complete
 		});
 	};
