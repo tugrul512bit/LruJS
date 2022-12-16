@@ -17,7 +17,7 @@ callbackBackingStoreSave: user-given cache(write)-miss function to save data to 
 				callback(); 
 			}); 
 		}
-elementLifeTimeMs: maximum miliseconds before an element is invalidated, only invalidated at next get() or set() call with its key
+elementLifeTimeMs: maximum miliseconds before an element is invalidated (0=infinite life-time & faster cache-hit), only invalidated at next get() or set() call with its key
 flush(): all in-flight get/set accesses are awaited and all edited keys are written back to backing-store. flushes the cache.
 reload(): evicts all cache to reload new values from backing store
 reloadKey(): only evicts selected item (to reload its new value on next access)
@@ -106,7 +106,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 			let slot = mapping.get(key);
 
 			// RAM speed data
-			if((Date.now() - bufTime[slot]) > maxWait)
+			if( (maxWait > 0) &&  ((Date.now() - bufTime[slot]) > maxWait))
 			{
 				
 				// if slot is locked by another operation, postpone the current operation
@@ -147,10 +147,10 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 				}
 				
 			}
-			else    // slot life span has not ended
+			else    // slot life span has not ended or there is no lifespan (maxWait = 0)
 			{
 				bufVisited[slot]=1;
-				bufTime[slot] = Date.now();
+				bufTime[slot] = (maxWait>0) ? Date.now() : 0;
 
 				// if it is a "set" operation
 				if(aType == aTypeSet)
@@ -209,7 +209,7 @@ let Lru = function(cacheSize,callbackBackingStoreLoad,elementLifeTimeMs=1000,cal
 				bufData[ctrFound]=res;
 				bufVisited[ctrFound]=0;
 				bufKey[ctrFound]=key;
-				bufTime[ctrFound]=Date.now();
+				bufTime[ctrFound]=(maxWait>0) ? Date.now() : 0;
 				bufLocked[ctrFound]=0;
 
 				mapping.set(key,ctrFound);
