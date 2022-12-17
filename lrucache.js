@@ -349,6 +349,7 @@ let DirectMapped = function(cacheSize,callbackBackingStoreLoad,callbackBackingSt
 	const me = this;
 	const aTypeGet = 0;
 	const aTypeSet = 1;
+	let flushOp=0;
 	let asyncCacheMisses = 0;
 	let cacheSizeTmp = parseInt(cacheSize,10);
 	let tmp = 1;
@@ -415,6 +416,26 @@ let DirectMapped = function(cacheSize,callbackBackingStoreLoad,callbackBackingSt
 		});
 	};
 
+	// as many key-value pairs ( in form of { key:foo, value:bar } ) can be given, separated by commas
+	this.setMultiple = function(callback, ... keyValuePairs){
+		let result = [];
+		let ctr1 = keyValuePairs.length;
+		for(let i=0;i<ctr1;i++)
+			result.push(0);
+		let ctr2 = 0;
+		keyValuePairs.forEach(function(pair){
+			let ctr3 = ctr2++;
+			me.set(pair.key,pair.value,function(data){
+				result[ctr3] = data;
+				ctr1--;
+				if(ctr1==0)
+				{
+					callback(result);
+				}
+			});
+		});
+	};
+
 	// as many keys as required can be given, separated by commas
 	this.getMultipleAwaitable = function(... keys){
 		return new Promise(function(success,fail){
@@ -422,11 +443,18 @@ let DirectMapped = function(cacheSize,callbackBackingStoreLoad,callbackBackingSt
 		});
 	};
 
+	// as many key-value pairs ( in form of { key:foo, value:bar } ) can be given, separated by commas
+	this.setMultipleAwaitable = function(... keyValuePairs){
+		return new Promise(function(success,fail){
+			me.setMultiple(success, ... keyValuePairs);
+		});
+	};
+
 	// push all edited slots to backing-store and reset all slots lifetime to "out of date"
 	this.flush = function(callback){
 
 		function waitForReadWrite(callbackW){
-
+			flushOp=1;
 			// if there are in-flight cache-misses cache-write-misses or active slot locks, then wait
 			if(bufLocked.reduce((e1,e2)=>{return e1+e2;}) > 0)
 			{
@@ -444,6 +472,7 @@ let DirectMapped = function(cacheSize,callbackBackingStoreLoad,callbackBackingSt
 					await me.setAwaitable(bufKey[i],bufData[i]);
 				}
 			}
+			flushOp=0;
 			callback(); // flush complete
 		});
 	};
@@ -527,7 +556,7 @@ let DirectMapped = function(cacheSize,callbackBackingStoreLoad,callbackBackingSt
 		else // SET operation
 		{
 			// key is found in cache ==> cache hit
-			if(bufKey[slot] == key)
+			if((bufKey[slot] == key) && (!flushOp))
 			{
 				bufData[slot]=value;
 				bufEdited[slot]=1;
