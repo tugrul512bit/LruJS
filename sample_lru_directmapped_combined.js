@@ -1,7 +1,7 @@
 "use strict";
 
 // 0:L1 cache hit test, 1:L2 cache hit test, 2:backing-store(takes several seconds) test
-let benchmark = 2;
+let benchmark = 0;
 // fx8150 @ 2.1GHz:
 // L1           =0.0007 milliseconds per pixel (simplest direct-mapped cache, integer-only indexing)
 // L2           =0.0030 milliseconds per pixel (CLOCK-LRU algorithm + some more book-keeping)
@@ -82,10 +82,10 @@ for(let ct = 0; ct < ctrMax; ct++)
 			parseInt(Math.random()*L1_num_cache_elements)
 		];
 
-		index = bench[2-benchmark];
+		let index = bench[2-benchmark];
 		let t1 = Date.now();
 		L1_cache.get(index,function(result){
-			t2 = Date.now();
+			let t2 = Date.now();
 			image[index].d=result;
 			if(image[index].a>0)
 				image[index].t+=(t2-t1);
