@@ -1,21 +1,21 @@
 "use strict";
 
-// 0:L1 cache hit test, 1:L2 cache hit test, 2:backing-store(takes several seconds) test
+// 0:L1 cache hit test, 1:L2 cache hit test, 2:backing-store test (takes 5-10 seconds)
 let benchmark = 0;
-// fx8150 @ 2.1GHz:
-// L1           =0.0007 milliseconds per pixel (simplest direct-mapped cache, integer-only indexing)
-// L2           =0.0030 milliseconds per pixel (CLOCK-LRU algorithm + some more book-keeping)
-// backing-store=2.1000 milliseconds per pixel (simulating heavy-work)
+// fx8150 @ 3.6GHz and single-channel DDR3 @ 1333MHz:
+// L1           =0.00015 milliseconds per pixel (simplest direct-mapped cache, integer-only indexing)
+// L2           =0.00065 milliseconds per pixel (CLOCK-LRU algorithm + some more book-keeping)
+// backing-store=1.68000 milliseconds per pixel (simulating heavy-work)
 
 
 // slow but associative access
 let L2 = require("./lrucache.js").Lru;
-let L2_num_cache_elements = 40;
+let L2_num_cache_elements = 20;
 let L2_element_life_time_miliseconds = 1000;
 
 // fast but a lot of collisions for various keys
 let L1 = require("./lrucache.js").DirectMapped;
-let L1_num_cache_elements = 8;
+let L1_num_cache_elements = 4;
 
 
 // compute pixel color to render a mandelbrot set
@@ -68,7 +68,8 @@ for(let y = 0; y < N; y++)
 	}
 
 let ctr = 0;
-let ctrMax = 10000;
+let ctrMax = (benchmark==2)?10000:100000;
+let timeTable={};
 for(let ct = 0; ct < ctrMax; ct++)
 {	
 		let bench=[
